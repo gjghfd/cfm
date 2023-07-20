@@ -15,6 +15,8 @@ import grpc
 from protocol import protocol_pb2
 from protocol import protocol_pb2_grpc
 
+import pandas as pd
+
 import lib.workloads
 
 MAIN_LOOP_SLEEP = 0.1 # 100 ms
@@ -26,9 +28,7 @@ class Scheduler:
         self.wid = 0
         self.servers = []
         random.seed(args.seed)
-        self.schedule = self.get_schedule(args.size, args.until,
-                                          args.workload, args.ratios,
-                                          variable_ratios, args.start_burst)
+        self.schedule = self.get_schedule(args.workload_path, args.workload)
         self.pending = [] # Workloads that have arrived but haven't been scheduled
         self.executing = {} # Currently executing workloads
         self.finished = [] # Workloads that have finished executing
@@ -48,44 +48,21 @@ class Scheduler:
                     args.size, args.until))
 
     
-    def get_schedule(self, size, max_arrival, workloads, ratios, variable_ratios, start_burst):
-        
-        assert len(workloads) == len(ratios)
-
-        ratios = list(map(int, ratios))
-        
-        # this is what a ratio of 1 corresponds to
-        unit = size / sum(ratios)
-
+    def get_schedule(self, workload_path, workloads):
+        invocations = pd.read_csv(workload_path, usecols=['submit_time', 'function_id', 'memory', 'task_id'])
         schedule = []
-        wid = 0
+        for index, row in invocations.iterrows():
+            workload_name = workloads[row.function_id]
 
-        for workload_name, ratio in zip(workloads, ratios):
-            times = int(unit * ratio)
-            print("schedule will have {} {} times".format(workload_name, times))
-            
-            workload_class = lib.workloads.get_workload_class(workload_name)
+            workload_class = lib.workloads.get_workload_class(workloads[row.function_id])
             cpu_req = workload_class.cpu_req
             ideal_mem = workload_class.ideal_mem
+            slo = workload_class.slo
+
+            schedule.append(SchedWorkload(workload_name, index + 1, cpu_req, ideal_mem,
+                                          row.submit_time / 1000.0, workload_class.min_mem, slo))
             
-            # Use user-provided min_mem if applicable
-            if workload_name in variable_ratios:
-                min_mem = variable_ratios[workload_name] * ideal_mem
-            else:
-                min_mem = workload_class.min_mem
-
-            # Add 'times' instances of this workload to the scheduler     
-            for _ in range(times):
-                schedule.append(SchedWorkload(workload_name, wid, cpu_req, ideal_mem,
-                                            max_arrival, min_mem))
-                wid += 1
-
         schedule.sort(key=lambda x: x.ts_arrival)
-
-        # Change the arrival of the first 'start_bust' workloads to 0
-        if start_burst > 0:
-            for idx in range(start_burst):
-                schedule[idx].ts_arrival = 0
         return schedule
 
     def update_resources(self):
@@ -197,17 +174,19 @@ class Scheduler:
 
 
 class SchedWorkload:
-    def __init__(self, name, idd, cpu_req, mem_req, max_arrival, min_mem):
+    def __init__(self, name, idd, cpu_req, mem_req, ts_arrival, min_mem, slo):
         self.name = name
         self.idd = idd
         self.cpu_req = cpu_req
         self.mem_req = mem_req
         self.min_mem = min_mem
 
-        self.ts_arrival = random.uniform(0, max_arrival)
+        self.ts_arrival = ts_arrival
         self.ts_sent = 0
         self.ts_start = 0
         self.ts_finish = 0
+
+        self.ddl = self.ts_arrival + slo
 
     def get_name(self):
         return self.name + str(self.idd)
@@ -499,23 +478,14 @@ def main():
                         'default=200', default=200)
     parser.add_argument('--workload', type=lambda s: s.split(','),
                         help='tasks that comprise the workload ' \
-                        'default=quicksort,kmeans,memaslap',
-                        default='quicksort,kmeans,memaslap')
-    parser.add_argument('--ratios', type=lambda s: s.split(':'),
-                        help='ratios of tasks in workload, default=2:1:1',
-                        default="2:1:1")
-    parser.add_argument('--until', type=int,
-                        help='max arrival time in minutes default=20',
-                        default=20)
+                        'default=matrix,imgscan,graphx,pagerank,quicksort,memcached',
+                        default='matrix,imgscan,graphx,pagerank,quicksort,memcached')
     parser.add_argument('--uniform_ratio', type=float,
                         help='Smallest allowable memory ratio',
                         default=0)
     parser.add_argument('--variable_ratios', type= lambda s: s.split(','),
                         help='Min ratio for each workload',
                         default=[])
-    parser.add_argument('--start_burst', type=int,
-                        help='Number of workloads that arrive immediately',
-                        default=0)
     parser.add_argument('--optimal', '-o', action='store_true',
                         help='Use the optimal algorithm')
 

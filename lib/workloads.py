@@ -142,8 +142,9 @@ class Workload:
 
 class Quicksort(Workload):
     wname = "quicksort"
-    ideal_mem = 8250
-    min_ratio = 0.65
+    ideal_mem = 8294.4
+    min_ratio = 0.5
+    slo = 984.000
     min_mem = int(min_ratio * ideal_mem)
     binary_name = "quicksort"
     cpu_req = 1
@@ -158,6 +159,95 @@ class Quicksort(Workload):
         full_command = ' '.join((prefix, 'exec', set_cpu, shell_cmd))
         return full_command
 
+class Matrix(Workload):
+    wname = "matrix"
+    ideal_mem = 3174.4
+    min_ratio = 0.5
+    slo = 1296
+    min_mem = int(min_ratio * ideal_mem)
+    binary_name = "matrix"
+    cpu_req = 1
+    coeff = [0]
+
+    def get_cmdline(self, procs_path, pinned_cpus):
+        prefix = "echo $$ > {} &&".format(procs_path)
+        shell_cmd = '/usr/bin/time -v' + ' python ' + constants.WORK_DIR + '/matrix/run.py'
+        pinned_cpus_string = ','.join(map(str, pinned_cpus))
+        set_cpu = 'taskset -c {}'.format(pinned_cpus_string)
+        full_command = ' '.join((prefix, 'exec', set_cpu, shell_cmd))
+        return full_command
+
+class Imgscan(Workload):
+    wname = "imgscan"
+    ideal_mem = 4608
+    min_ratio = 0.5
+    slo = 70
+    min_mem = int(min_ratio * ideal_mem)
+    binary_name = "imgscan"
+    cpu_req = 1
+    coeff = [0]
+
+    def get_cmdline(self, procs_path, pinned_cpus):
+        prefix = "echo $$ > {} &&".format(procs_path)
+        shell_cmd = '/usr/bin/time -v' + ' python ' + constants.WORK_DIR + '/imgscan/imgscan.py'
+        pinned_cpus_string = ','.join(map(str, pinned_cpus))
+        set_cpu = 'taskset -c {}'.format(pinned_cpus_string)
+        full_command = ' '.join((prefix, 'exec', set_cpu, shell_cmd))
+        return full_command
+
+class Graphx(Workload):
+    wname = "graphx"
+    ideal_mem = 5120
+    min_ratio = 0.5
+    slo = 111
+    min_mem = int(min_ratio * ideal_mem)
+    binary_name = "graphx"
+    cpu_req = 4
+    coeff = [0]
+
+    def get_cmdline(self, procs_path, pinned_cpus):
+        prefix = "echo $$ > {} &&".format(procs_path)
+        shell_cmd = '/usr/bin/time -v' + ' ' + constants.WORK_DIR + '/pagerank/spark-2.4.0-bin-hadoop2.7/bin/spark-submit --driver-memory 10g --master local[3] --class CCS --conf spark.local.dir=/mydata graphx/target/scala-2.11/graphx_2.11-1.0.jar'
+        pinned_cpus_string = ','.join(map(str, pinned_cpus))
+        set_cpu = 'taskset -c {}'.format(pinned_cpus_string)
+        full_command = ' '.join((prefix, 'exec', set_cpu, shell_cmd))
+        return full_command
+
+class Pagerank(Workload):
+    wname = "pagerank"
+    ideal_mem = 5529.6
+    min_ratio = 0.5
+    slo = 510
+    min_mem = int(min_ratio * ideal_mem)
+    binary_name = "pagerank"
+    cpu_req = 3
+    coeff = [0]
+
+    def get_cmdline(self, procs_path, pinned_cpus):
+        prefix = "echo $$ > {} &&".format(procs_path)
+        shell_cmd = '/usr/bin/time -v' + ' ' + constants.WORK_DIR + '/pagerank/spark-2.4.0-bin-hadoop2.7/bin/spark-submit --driver-memory 10g --master local[2] --class pagerank --conf spark.local.dir=/mydata pagerank/target/scala-2.11/pagerank_2.11-1.0.jar'
+        pinned_cpus_string = ','.join(map(str, pinned_cpus))
+        set_cpu = 'taskset -c {}'.format(pinned_cpus_string)
+        full_command = ' '.join((prefix, 'exec', set_cpu, shell_cmd))
+        return full_command
+
+class Memcached(Workload):
+    wname = "memcached"
+    ideal_mem = 12288
+    min_ratio = 0.5
+    slo = 738
+    min_mem = int(min_ratio * ideal_mem)
+    binary_name = "memcached"
+    cpu_req = 2
+    coeff = [0]
+
+    def get_cmdline(self, procs_path, pinned_cpus):
+        prefix = "echo $$ > {} &&".format(procs_path)
+        shell_cmd = '/usr/bin/time -v' + ' python ' + constants.WORK_DIR + '/memcached/run.py {}'.format(pinned_cpus[0])
+        pinned_cpus_string = ','.join(map(str, pinned_cpus))
+        set_cpu = 'taskset -c {}'.format(pinned_cpus_string)
+        full_command = ' '.join((prefix, 'exec', set_cpu, shell_cmd))
+        return full_command
 
 class Linpack(Workload):
     wname = "linpack"
@@ -413,11 +503,9 @@ class Stream(Workload):
         return full_command
 
 def get_workload_class(wname):
-    return {'quicksort': Quicksort,
-            'linpack': Linpack,
-            'tf-inception': Tfinception,
-            'tf-resnet': Tfresnet,
-            'spark': Spark,
-            'kmeans': Kmeans,
-            'memaslap': Memaslap,
-            'stream': Stream}[wname]
+    return {'matrix': Matrix,
+            'imgscan': Imgscan,
+            'graphx': Graphx,
+            'pagerank': Pagerank,
+            'quicksort': Quicksort,
+            'memcached': Memcached}[wname]

@@ -26,16 +26,16 @@ class Container:
             return
 
         if self.ratio == 'max':
-            memory_limit = 'max'
+            memory_limit = str(round(self.mem_req*1024))
             print("Setting container memory limit to Max")
         else:
-            memory_limit = str(round(self.ratio*self.mem_req)) + 'M'
+            memory_limit = str(round(self.ratio*self.mem_req*1024))
             print("Setting {} memory limit to "
                   "{}% ({}) of max".format(self.name,
                                            round(self.ratio*100),
                                            memory_limit))
 
-        mem_high_path = self.get_cont_path() + '/memory.high'
+        mem_high_path = '/sys/fs/memory/' self.get_cont_path() + '/memory.limit_in_bytes'
         with open(mem_high_path, 'w') as f:
             f.write(memory_limit)
 
@@ -44,10 +44,10 @@ class Container:
         self.set_memory_limit()
 
     def get_cont_path(self):
-        return "{}/{}".format(constants.CGROUP_PATH, self.name)
+        return self.name
 
     def get_procs_path(self):
-        return self.get_cont_path() + '/cgroup.procs'
+        return '/sys/fs/cgroup/memory/' +  self.get_cont_path() + '/cgroup.procs'
 
     def create(self):
         """creates new container as child of CGROUP_PATH"""
