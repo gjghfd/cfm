@@ -6,7 +6,6 @@ import time
 import logging
 import argparse
 import socket
-from tensorflow.python.framework import test_util
 
 import multiprocessing
 import psutil
@@ -295,9 +294,6 @@ class Machine:
         with open(SOMAXCONN_PATH, 'r') as f:
             assert('65536' == f.read().strip('\n')), 'somaxconn is set to an incorrect value'
     
-    def check_tf_mkl(self):
-        assert(test_util.IsMklEnabled()), "tensorflow doesn't have mkl enabled"
-
     def set_cur_ratio(self):
         try:
             # Ratio > 1 means that we're haven't fully utilized local memory
