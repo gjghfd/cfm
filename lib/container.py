@@ -35,7 +35,7 @@ class Container:
                                            round(self.ratio*100),
                                            memory_limit))
 
-        mem_high_path = '/sys/fs/memory/' self.get_cont_path() + '/memory.limit_in_bytes'
+        mem_high_path = self.get_cont_path() + '/memory.limit_in_bytes'
         with open(mem_high_path, 'w') as f:
             f.write(memory_limit)
 
@@ -44,10 +44,10 @@ class Container:
         self.set_memory_limit()
 
     def get_cont_path(self):
-        return self.name
+        return '/sys/fs/cgroup/memory/cfm/' + self.name
 
     def get_procs_path(self):
-        return '/sys/fs/cgroup/memory/' +  self.get_cont_path() + '/cgroup.procs'
+        return self.get_cont_path() + '/cgroup.procs'
 
     def create(self):
         """creates new container as child of CGROUP_PATH"""
