@@ -26,10 +26,10 @@ class Container:
             return
 
         if self.ratio == 'max':
-            memory_limit = str(round(self.mem_req*1024))
+            memory_limit = str(round(self.mem_req*1024*1024))
             print("Setting container memory limit to Max")
         else:
-            memory_limit = str(round(self.ratio*self.mem_req*1024))
+            memory_limit = str(round(self.ratio*self.mem_req*1024*1024))
             print("Setting {} memory limit to "
                   "{}% ({}) of max".format(self.name,
                                            round(self.ratio*100),

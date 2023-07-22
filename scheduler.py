@@ -44,9 +44,6 @@ class Scheduler:
         
         self.original_servers = list(self.servers) # Retain the original ordering for later shuffling operations
 
-        print("Size of workload is {}; max arrival time is {} seconds".format(
-                    args.size, args.until))
-
     
     def get_schedule(self, workload_path, workloads):
         invocations = pd.read_csv(workload_path, usecols=['submit_time', 'function_id', 'memory', 'task_id'])
@@ -225,7 +222,6 @@ class Server:
         self.total_mem = max_mem
         self.uniform_ratio = uniform_ratio
         self.variable_ratios = variable_ratios
-        self.uniform_ratio = uniform_ratio
 
         req = protocol_pb2.CheckinReq(use_remote_mem=remotemem,
                                       max_cpus=max_cpus,
@@ -423,14 +419,7 @@ def generate_filename(args):
     cpus = str(args.cpus)
     mem = str(args.mem)
     size = str(args.size)
-    if not args.remotemem:
-        policy = "nofar"
-    elif args.uniform_ratio:
-        policy = "uniform"
-    elif args.optimal:
-        policy = "optimal"
-    else:
-        policy = "variable"
+    policy = "optimal"
 
     filename = 'cpus_{}_mem_{}_size_{}'
     filename = filename.format(cpus, mem, size)
@@ -461,18 +450,22 @@ def check_args(args):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('seed', type=int,
-                        help="Used to seed randomization")
+    parser.add_argument('00seed', type=int,
+                        help="Used to seed randomization",
+                        default=42)
     parser.add_argument('servers', type=lambda s: s.split(','),
                         help='comma separated list of servers')
-    parser.add_argument('cpus', type=int,
-                        help='number of cpus required for each server')
-    parser.add_argument('mem', type=int,
-                        help='memory required for each server (MB)')
+    parser.add_argument('--cpus', type=int,
+                        help='number of cpus required for each server',
+                        default=16)
+    parser.add_argument('--mem', type=int,
+                        help='memory required for each server (MB)',
+                        default=64)
     parser.add_argument('--remotemem', '-r', action='store_true',
-                        help='enable remote memory')
-    parser.add_argument('--max_far', '-s', type=int, default=0,
-                        help='max size of far memory, default=0 (unlimited)')
+                        help='enable remote memory',
+                        default=True)
+    parser.add_argument('--max_far', '-s', type=int, default=16,
+                        help='max size of far memory, default=16')
     parser.add_argument('--size', type=int,
                         help='size of workload (num of tasks) ' \
                         'default=200', default=200)
@@ -487,7 +480,10 @@ def main():
                         help='Min ratio for each workload',
                         default=[])
     parser.add_argument('--optimal', '-o', action='store_true',
-                        help='Use the optimal algorithm')
+                        help='Use the optimal algorithm', default=True)
+    parser.add_argument('--workload_path', type=string,
+                        help='Workload path',
+                        default='/mydata/cfm/workload.csv')
 
     cmdargs = parser.parse_args()
 
