@@ -10,4 +10,5 @@ do
     servers=$servers",10.10.1."$((i+2))":50051"
 done
 
-nohup python generate_sampled_trace.py --workload_config_path /mydata/cfm/workload.csv --load_frac $servers $2 &
+python generate_sampled_trace.py --workload_config_path /mydata/cfm/workload.csv --load_frac $2
+nohup python scheduler.py $servers &

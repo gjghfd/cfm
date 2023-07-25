@@ -49,15 +49,14 @@ class Scheduler:
         invocations = pd.read_csv(workload_path, usecols=['submit_time', 'function_id', 'memory', 'task_id'])
         schedule = []
         for index, row in invocations.iterrows():
-            workload_name = workloads[row.function_id]
-
-            workload_class = lib.workloads.get_workload_class(workloads[row.function_id])
+            workload_name = workloads[int(row['function_id'])]
+            workload_class = lib.workloads.get_workload_class(workloads[int(row['function_id'])])
             cpu_req = workload_class.cpu_req
             ideal_mem = workload_class.ideal_mem
             slo = workload_class.slo
 
             schedule.append(SchedWorkload(workload_name, index + 1, cpu_req, ideal_mem,
-                                          row.submit_time / 1000.0, workload_class.min_mem, slo))
+                                          row['submit_time'] / 1000.0, workload_class.min_mem, slo))
             
         schedule.sort(key=lambda x: x.ts_arrival)
         return schedule
@@ -450,7 +449,7 @@ def check_args(args):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('00seed', type=int,
+    parser.add_argument('--seed', type=int,
                         help="Used to seed randomization",
                         default=42)
     parser.add_argument('servers', type=lambda s: s.split(','),
@@ -460,11 +459,11 @@ def main():
                         default=16)
     parser.add_argument('--mem', type=int,
                         help='memory required for each server (MB)',
-                        default=64)
+                        default=65536)
     parser.add_argument('--remotemem', '-r', action='store_true',
                         help='enable remote memory',
                         default=True)
-    parser.add_argument('--max_far', '-s', type=int, default=16,
+    parser.add_argument('--max_far', '-s', type=int, default=16384,
                         help='max size of far memory, default=16')
     parser.add_argument('--size', type=int,
                         help='size of workload (num of tasks) ' \
@@ -481,7 +480,7 @@ def main():
                         default=[])
     parser.add_argument('--optimal', '-o', action='store_true',
                         help='Use the optimal algorithm', default=True)
-    parser.add_argument('--workload_path', type=string,
+    parser.add_argument('--workload_path', type=str,
                         help='Workload path',
                         default='/mydata/cfm/workload.csv')
 

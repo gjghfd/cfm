@@ -25,7 +25,6 @@ from scipy.optimize import Bounds, minimize
 MAIN_LOOP_SLEEP = 1
 DRIVER_PATH = "/sys/class/infiniband/mlx4_0/ports/1/counters/{}"
 MEGABYTE = 1024*1024
-CURR_PAGES_PATH = '/sys/kernel/debug/frontswap/curr_pages'
 SWAPPINESS_PATH = '/proc/sys/vm/swappiness'
 THP_PATH = "/sys/kernel/mm/transparent_hugepage/enabled"
 SOMAXCONN_PATH = "/proc/sys/net/core/somaxconn"
@@ -161,7 +160,6 @@ class Machine:
         #self.check_swappiness()
         self.check_thp()
         self.check_somaxconn()
-        self.check_tf_mkl()
 
         logging.info("Checkin Successful")
 
@@ -482,11 +480,6 @@ class Machine:
                 bw_tx = tx_bytes - self.prev_sent
                 bw_recv = recv_bytes - self.prev_recv
 
-                try:
-                    with open(CURR_PAGES_PATH, 'r') as f_curr_pages:
-                        curr_pages = int(f_curr_pages.read())
-                except FileNotFoundError:
-                        curr_pages = 0
 
             stats = "CPU: {}, Total Mem: {}, Used Mem: {}, Used Swap: {}".format(cpu,
                     mem.total, mem.used, round(swap, 3))
@@ -503,7 +496,6 @@ class Machine:
                 self.bytes_out_samples += bw_tx
                 self.prev_recv = recv_bytes
                 self.prev_sent = tx_bytes
-                self.curr_pages.append(curr_pages)
 
                 logging.info("bw_tx: {}".format(bw_tx / MEGABYTE))
                 logging.info("bw_recv: {}".format(bw_recv / MEGABYTE))

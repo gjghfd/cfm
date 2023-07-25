@@ -243,7 +243,12 @@ class Memcached(Workload):
 
     def get_cmdline(self, procs_path, pinned_cpus):
         prefix = "echo $$ > {} &&".format(procs_path)
-        shell_cmd = '/usr/bin/time -v' + ' python ' + constants.WORK_DIR + '/memcached/run.py {}'.format(pinned_cpus[0])
+        mn = 32
+        for c in pinned_cpus:
+            if c < mn:
+                mn = c
+                break
+        shell_cmd = '/usr/bin/time -v' + ' python ' + constants.WORK_DIR + '/memcached/run.py {}'.format(mn)
         pinned_cpus_string = ','.join(map(str, pinned_cpus))
         set_cpu = 'taskset -c {}'.format(pinned_cpus_string)
         full_command = ' '.join((prefix, 'exec', set_cpu, shell_cmd))
