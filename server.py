@@ -169,11 +169,11 @@ class Machine:
         if self.using_remote_mem:
             if self.alloc_mem <= self.total_mem:
                 self.using_remote_mem = False
-                print("Transitioning to 8 cpus")
+                print("Transitioning to 8 cpus", flush = True)
         else:
             if self.alloc_mem > self.total_mem:
                 self.using_remote_mem = True
-                print("Transitioning to 7 cpus")
+                print("Transitioning to 7 cpus", flush = True)
 
     def check_reclaimer_cpu(self): # Check if reclaimer CPU is being used and move workload off of it
         all_cpus = set(range(self.reclaimer_cpu)) # All CPUs except the reclaimer
@@ -185,14 +185,14 @@ class Machine:
             workload_on_reclaimer = self.cpu_assignments[self.reclaimer_cpu]
             pids = workload_on_reclaimer.get_pids() # Potentially offending pids
             replacement_cpu = pinnable_cpus.pop() # Get a replacement CPU
-            print("Moving {} off of the reclaimer CPU".format(workload_on_reclaimer.get_name()))
+            print("Moving {} off of the reclaimer CPU".format(workload_on_reclaimer.get_name()), flush = True)
             
             ''' Not just the parent. But the children too'''
             for pid in pids:
                 process = psutil.Process(pid)
                 affinity_list = process.cpu_affinity() # 
                 if self.reclaimer_cpu in affinity_list:
-                    print("Moving {} off of the reclaimer CPU and to {}".format(pid, replacement_cpu))
+                    print("Moving {} off of the reclaimer CPU and to {}".format(pid, replacement_cpu), flush = True)
                     new_affinity_list = [cpu for cpu in affinity_list if cpu != self.reclaimer_cpu]
                     new_affinity_list.append(replacement_cpu)
                     process.cpu_affinity(new_affinity_list)
@@ -214,19 +214,19 @@ class Machine:
             allowed_far = max(0, self.alloc_mem - self.total_mem)
             allowed_far = 1024 if allowed_far == 0 else allowed_far
             far_mem = self.get_swap()
-            print("allowed_far={} far_mem={}".format(allowed_far, far_mem))
+            print("allowed_far={} far_mem={}".format(allowed_far, far_mem), flush = True)
 
             if far_mem <= allowed_far or far_mem < 32:
                 break
 
             if time.time() - start > 20:
-                print("waited for 20 seconds. let it go")
+                print("waited for 20 seconds. let it go", flush = True)
                 break
 
-            print("wait for swap usage to go down")
+            print("wait for swap usage to go down", flush = True)
             time.sleep(0.5)
         end = time.time()
-        print('waited for {} s'.format(end - start))
+        print('waited for {} s'.format(end - start), flush = True)
         global total_wait_time
         total_wait_time += end - start      
 
@@ -272,7 +272,7 @@ class Machine:
 
         new_workload.start()
         self.executing.append(new_workload)
-        print("started {} at {} s".format(new_workload.get_name(), round(new_workload.ts_start - self.base_time, 3)))
+        print("started {} at {} s".format(new_workload.get_name(), round(new_workload.ts_start - self.base_time, 3)), flush = True)
 
     def check_swappiness(self):
         with open(SWAPPINESS_PATH, 'r') as f:
@@ -390,7 +390,7 @@ class Machine:
                 finished_string = "{} finished at {} s (duration={})"
                 print(finished_string.format(workload.get_name(),
                                             round(workload.ts_finish - self.base_time, 3),
-                                            workload.get_process_duration()))
+                                            workload.get_process_duration()), flush = True)
                 
                 self.unpinned_cpus.update(workload.pinned_cpus)
                 
@@ -411,7 +411,7 @@ class Machine:
         self.finished.extend(new_finished)
 
         if new_finished:
-            print("{} tasks finished".format(len(new_finished)))
+            print("{} tasks finished".format(len(new_finished)), flush = True)
             if self.remote_mem:
                 if self.uniform_ratio:
                     self.shrink_all_uniformly(self.executing)
@@ -433,10 +433,10 @@ class Machine:
 
     def shutdown(self):
         for workload in self.executing:
-            print("Terminating {}".format(workload.get_name()))
+            print("Terminating {}".format(workload.get_name()), flush = True)
             workload.kill()
         self.shutdown_now = True
-        print("Shutting Down")
+        print("Shutting Down", flush = True)
 
     def get_swap(self):
         # Get list of pids
@@ -573,10 +573,10 @@ def serve():
     server.add_insecure_port('[::]:50051')
     server.start()
 
-    total_cpus = multiprocessing.cpu_count()
-    total_mem = psutil.virtual_memory().total
+    total_cpus = 16
+    total_mem = 64 * 1024 * 1024 * 1024
     print("server {} waiting for connection, avail cpus={} mem={} MB".format(hostname,
-                                              total_cpus, int(total_mem/(1024*1024))))
+                                              total_cpus, int(total_mem/(1024*1024))), flush = True)
 
     try:
         while not thismachine.shutdown_now:
@@ -600,4 +600,4 @@ if __name__ == '__main__':
     
     total_wait_time = 0
     serve()
-    print('total wait tims: {} s'.format(total_wait_time))
+    print('total wait times: {} s'.format(total_wait_time), flush = True)

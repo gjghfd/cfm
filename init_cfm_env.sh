@@ -6,7 +6,7 @@ sudo mkdir -p /sys/fs/cgroup/memory/cfm
 sudo chown -R gjghfd /sys/fs/cgroup/memory/cfm
 cd cfm/protocol
 source gen_protocol.sh
-echo 65536 | sudo tee somaxconn
+echo 65536 | sudo tee /proc/sys/net/core/somaxconn
 # for generating trace
 cd /mydata
 mkdir -p azure-data
@@ -15,3 +15,4 @@ wget https://azurecloudpublicdataset2.blob.core.windows.net/azurepublicdatasetv2
 tar -xf azurefunctions-dataset2019.tar.xz
 pip install pandas
 cp /mydata/SoDM/service/build/generate_sampled_trace.py /mydata/cfm
+echo "Please source cfm/protocol/gen_protocol.sh first."

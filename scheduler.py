@@ -49,8 +49,9 @@ class Scheduler:
         invocations = pd.read_csv(workload_path, usecols=['submit_time', 'function_id', 'memory', 'task_id'])
         schedule = []
         for index, row in invocations.iterrows():
-            workload_name = workloads[int(row['function_id'])]
-            workload_class = lib.workloads.get_workload_class(workloads[int(row['function_id'])])
+            func_id = int(row['function_id']) - 1
+            workload_name = workloads[func_id]
+            workload_class = lib.workloads.get_workload_class(workloads[func_id])
             cpu_req = workload_class.cpu_req
             ideal_mem = workload_class.ideal_mem
             slo = workload_class.slo
@@ -59,6 +60,12 @@ class Scheduler:
                                           row['submit_time'] / 1000.0, workload_class.min_mem, slo))
             
         schedule.sort(key=lambda x: x.ts_arrival)
+        base_time = schedule[0].ts_arrival - 1
+        for request in schedule:
+            request.ts_arrival -= base_time
+        print('Workloads Info:')
+        print(len(schedule))
+        print(schedule[0].ts_arrival, flush = True)
         return schedule
 
     def update_resources(self):
@@ -127,7 +134,7 @@ class Scheduler:
         def execute_done(future, base_time, workload, executing, server):
             assert future.result().success
             workload.ts_sent = time.time() - base_time
-            print("Sent {} to {}".format(workload.get_name(), server.name))
+            print("Sent {} to {}".format(workload.get_name(), server.name), flush = True)
             executing[workload.idd] = workload
 
         for workload in list(self.pending):
@@ -151,7 +158,7 @@ class Scheduler:
         for workload in self.schedule:
             if workload.ts_arrival <= elapsed:
                 self.pending.append(workload)
-                print("{} arrived".format(workload.name + str(workload.idd)))
+                print("{} arrived".format(workload.name + str(workload.idd)), flush = True)
             else:
                 new_schedule.append(workload)
 
@@ -190,6 +197,11 @@ class SchedWorkload:
     def get_duration(self):
         return self.ts_finish - self.ts_start
 
+    def get_slo(self):
+        if self.ts_finish <= self.ddl:
+            return 0
+        return 1
+
     def get_jct(self):
         return self.ts_finish - self.ts_arrival
 
@@ -204,7 +216,7 @@ class Server:
                      variable_ratios, max_far > 0, optimal)
         self.addr = addr
 
-        print("connected to server={}".format(self.name))
+        print("connected to server={}".format(self.name), flush = True)
 
     def __del__(self):
         self.close()
@@ -325,15 +337,24 @@ class Server:
 
 
 def print_finished_stats(finishq, base_time):
-    print("\nfinished {} workloads".format(len(finishq)))
+    num = len(finishq)
+    print("\nfinished {} workloads".format(num), flush = True)
     latest_finish = max(map(lambda w: w.ts_finish, finishq))
-    print("makespan={}".format(round(latest_finish, 3)))
-    print("\nName,Arrival,Start,Finish")
+    print("makespan={}".format(round(latest_finish, 3)), flush = True)
+    print("\nName,Arrival,Start,Finish", flush = True)
+    total_jct = 0
+    total_slo = 0
     for workload in sorted(finishq, key=lambda w: w.get_name()):
-        print("{},{},{},{}".format(workload.get_name(),
+        jct = get_jct(workload)
+        slo = get_slo(workload)
+        print("{},{},{},{},{},{}".format(workload.get_name(),
                                    round(workload.ts_arrival, 3),
                                    round(workload.ts_sent, 3),
-                                   round(workload.ts_finish, 3)))
+                                   round(workload.ts_finish, 3),
+                                   jct, slo), flush = True)
+        total_jct += jct
+        total_slo += slo
+    print("AJCT = {}, SOLV = {}".format(total_jct / num, total_slo), flush = True)
 
 def average_samples_by_time(sample_list): # Takes in a list of lists
     # '*' unpacks an iterable into multiple args for a function
@@ -441,7 +462,7 @@ def check_args(args):
     else:
         # No two of these three can be active simultaneously
         uniform, variable, optimal = map(bool, (args.uniform_ratio, args.variable_ratios, args.optimal))
-        print(uniform, variable, optimal)
+        print(uniform, variable, optimal, flush = True)
         assert(uniform ^ variable ^ optimal),\
                ("You must specify one (and only one) of the following options: "
                 "uniform_ratio, variable_ratio.")
@@ -470,8 +491,8 @@ def main():
                         'default=200', default=200)
     parser.add_argument('--workload', type=lambda s: s.split(','),
                         help='tasks that comprise the workload ' \
-                        'default=matrix,imgscan,graphx,pagerank,quicksort,memcached',
-                        default='matrix,imgscan,graphx,pagerank,quicksort,memcached')
+                        'default=matrix,graphx,pagerank,imgscan,quicksort,memcached',
+                        default='matrix,graphx,pagerank,imgscan,quicksort,memcached')
     parser.add_argument('--uniform_ratio', type=float,
                         help='Smallest allowable memory ratio',
                         default=0)

@@ -6,13 +6,12 @@ import time
 import psutil
 import numpy as np
 import shlex
-import const
 
 from lib import utils
 from lib.container import Container
 from lib import constants
 
-const.slo_rate = 1.2
+slo_rate = 1.2
 
 class Workload:
     ''' This class is not meant to be used by itself. It's only purpose
@@ -151,7 +150,7 @@ class Quicksort(Workload):
     binary_name = "quicksort"
     cpu_req = 1
     coeff = [-1542.21354167, 2651.44791667, -1287.56145833, -62.16791667, 487.923]
-    slo = self.compute_ratio_from_coeff(coeff, 1) * const.slo_rate
+    slo = sum(coeff) * slo_rate    # t(1)
 
     def get_cmdline(self, procs_path, pinned_cpus):
         prefix = "echo $$ > {} &&".format(procs_path)
@@ -170,7 +169,7 @@ class Matrix(Workload):
     binary_name = "matrix"
     cpu_req = 1
     coeff = [13657.31770833, -38090.57291667, 38584.09479167, -16859.53458333, 2973.128]
-    slo = self.compute_ratio_from_coeff(coeff, 1) * const.slo_rate
+    slo = sum(coeff) * slo_rate    # t(1)
 
     def get_cmdline(self, procs_path, pinned_cpus):
         prefix = "echo $$ > {} &&".format(procs_path)
@@ -188,7 +187,7 @@ class Imgscan(Workload):
     binary_name = "imgscan"
     cpu_req = 1
     coeff = [-154.97395833, 400.55208333, -354.62604167, 97.63791667, 79.384]
-    slo = self.compute_ratio_from_coeff(coeff, 1) * const.slo_rate
+    slo = sum(coeff) * slo_rate    # t(1)
 
     def get_cmdline(self, procs_path, pinned_cpus):
         prefix = "echo $$ > {} &&".format(procs_path)
@@ -206,7 +205,7 @@ class Graphx(Workload):
     binary_name = "graphx"
     cpu_req = 4
     coeff = [-6695.83333333, 18030.77083333, -16994.50416667, 6349.43666667, -654.952]
-    slo = self.compute_ratio_from_coeff(coeff, 1) * const.slo_rate
+    slo = sum(coeff) * slo_rate    # t(1)
 
     def get_cmdline(self, procs_path, pinned_cpus):
         prefix = "echo $$ > {} &&".format(procs_path)
@@ -224,7 +223,7 @@ class Pagerank(Workload):
     binary_name = "pagerank"
     cpu_req = 3
     coeff = [-12991.74479167, 38267.36458333, -38085.11770833, 13492.85791667, -520.174]
-    slo = self.compute_ratio_from_coeff(coeff, 1) * const.slo_rate
+    slo = sum(coeff) * slo_rate    # t(1)
 
     def get_cmdline(self, procs_path, pinned_cpus):
         prefix = "echo $$ > {} &&".format(procs_path)
@@ -242,7 +241,7 @@ class Memcached(Workload):
     binary_name = "memcached"
     cpu_req = 2
     coeff = [8142.13541667, -19456.54166667, 17071.27708333, -7551.57583333, 2397.716]
-    slo = self.compute_ratio_from_coeff(coeff, 1) * const.slo_rate
+    slo = sum(coeff) * slo_rate    # t(1)
 
     def get_cmdline(self, procs_path, pinned_cpus):
         prefix = "echo $$ > {} &&".format(procs_path)

@@ -11,4 +11,4 @@ do
 done
 
 python generate_sampled_trace.py --workload_config_path /mydata/cfm/workload.csv --load_frac $2
-nohup python scheduler.py $servers &
+nohup python scheduler.py $servers > master.out 2>&1 &
