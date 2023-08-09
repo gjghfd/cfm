@@ -36,8 +36,12 @@ class Container:
                                            memory_limit))
 
         mem_high_path = self.get_cont_path() + '/memory.limit_in_bytes'
-        with open(mem_high_path, 'w') as f:
-            f.write(memory_limit)
+        try:
+            with open(mem_high_path, 'w') as f:
+                f.write(memory_limit)
+        except Exception as e:
+            print('Exception of type: {}, repeat, path = {}'.format(type(e), mem_high_path), flush = True)
+            self.set_memory_limit()
 
     def set_new_size(self, local_ratio):
         self.ratio = local_ratio

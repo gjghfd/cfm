@@ -104,7 +104,7 @@ class Machine:
         # State for calculating percents
         self.last_time = 0
         self.slow_downs = {}
-        for wname in ['quicksort', 'kmeans', 'memaslap', 'linpack', 'spark', 'tf-inception']:
+        for wname in ['matrix', 'graphx', 'pagerank', 'imgscan', 'quicksort', 'memcached']:
             self.slow_downs[wname] = 1
 
     def checkin(self, max_cpus, max_mem, use_remote, uniform_ratio, variable_ratios, limit_remote_mem, optimal):
@@ -399,7 +399,13 @@ class Machine:
                 self.free_cpus += workload.cpu_req
                 self.alloc_mem -= workload.ideal_mem
                 self.min_mem_sum -= workload.min_mem
-                self.executing.remove(workload)
+                if workload in self.executing:
+                    self.executing.remove(workload)
+                else:
+                    print("Error: workload not in executing list", flush = True)
+                    for w in self.executing:
+                        print(w.idd)
+                    print("my: {}".format(workload.idd), flush = True)
                 new_finished.append(workload)
                 
                 # adjust percents

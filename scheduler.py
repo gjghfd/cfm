@@ -345,8 +345,8 @@ def print_finished_stats(finishq, base_time):
     total_jct = 0
     total_slo = 0
     for workload in sorted(finishq, key=lambda w: w.get_name()):
-        jct = get_jct(workload)
-        slo = get_slo(workload)
+        jct = workload.get_jct()
+        slo = workload.get_slo()
         print("{},{},{},{},{},{}".format(workload.get_name(),
                                    round(workload.ts_arrival, 3),
                                    round(workload.ts_sent, 3),

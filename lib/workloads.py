@@ -58,14 +58,14 @@ class Workload:
 
     def __exec(self):
         " execute in self.thread "
-        print(self.cmdline)
+        print(self.cmdline, flush = True)
 
         self.ts_start = time.time()
         self.popen = subprocess.Popen(self.cmdline, stdout=subprocess.PIPE,
                                       stderr=subprocess.PIPE, shell=True)
         self.stdout, self.stderr = self.popen.communicate()  # blocks process exit
-        assert(self.popen.returncode == 0)
         self.ts_finish = time.time()
+        assert(self.popen.returncode == 0)
 
         self.container.delete()
 
