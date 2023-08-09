@@ -242,10 +242,12 @@ class Memcached(Workload):
     cpu_req = 2
     coeff = [8142.13541667, -19456.54166667, 17071.27708333, -7551.57583333, 2397.716]
     slo = sum(coeff) * slo_rate    # t(1)
+    global_counter = 0
 
     def get_cmdline(self, procs_path, pinned_cpus):
+        Memcached.global_counter += 1
         prefix = "echo $$ > {} &&".format(procs_path)
-        shell_cmd = '/usr/bin/time -v' + ' python ' + constants.WORK_DIR + '/memcached/run.py {} {}'.format(pinned_cpus[0], pinned_cpus[1])
+        shell_cmd = '/usr/bin/time -v' + ' python ' + constants.WORK_DIR + '/memcached/run.py {} {} {}'.format(global_counter, pinned_cpus[0], pinned_cpus[1])
         pinned_cpus_string = ','.join(map(str, pinned_cpus))
         set_cpu = 'taskset -c {}'.format(pinned_cpus_string)
         full_command = ' '.join((prefix, 'exec', set_cpu, shell_cmd))
