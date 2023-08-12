@@ -240,7 +240,7 @@ class Memcached(Workload):
     min_mem = int(min_ratio * ideal_mem)
     binary_name = "memcached"
     cpu_req = 2
-    coeff = [8142.13541667, -19456.54166667, 17071.27708333, -7551.57583333, 2397.716]
+    coeff = [-1257626.01406559, 4658264.81147493, -6464892.00248326, 3982672.9994612, -917582.27018449]
     slo = sum(coeff) * slo_rate    # t(1)
     global_counter = 0
 

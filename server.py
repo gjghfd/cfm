@@ -96,6 +96,9 @@ class Machine:
         self.bytes_in_samples = 0
         self.bytes_out_samples = 0
         self.curr_pages = []
+        self.total_shrink_time = 0
+        self.shrink_count = 0
+        self.max_shrink_time = 0
 
         # Bandwidth state
         self.prev_recv = 0
@@ -260,8 +263,17 @@ class Machine:
             if self.uniform_ratio:
                 self.shrink_all_uniformly(all_workloads)
             elif self.optimal:
+                begin_time = time.time()
+
                 self.shrink_all_optimally(all_workloads, idd)
-                self.last_time = time.time() * 1000 # to ms
+
+                self.last_time = time.time()
+                interval = self.last_time - begin_time
+                self.last_time *= 1000  # to ms
+                self.total_shrink_time += interval
+                self.shrink_count += 1
+                if interval > self.max_shrink_time:
+                    self.max_shrink_time = interval
             else:
                 self.shrink_all_proportionally(all_workloads)
 
@@ -505,6 +517,8 @@ class Machine:
 
                 logging.info("bw_tx: {}".format(bw_tx / MEGABYTE))
                 logging.info("bw_recv: {}".format(bw_recv / MEGABYTE))
+            
+            logging.info("shrink_time: count = {}, avg = {}, max = {}".format(shrink_count, total_shrink_time / shrink_count, max_shrink_time))
         else:
             pass
 
