@@ -485,7 +485,7 @@ def main():
                         help='enable remote memory',
                         default=True)
     parser.add_argument('--max_far', '-s', type=int, default=16384,
-                        help='max size of far memory, default=16')
+                        help='max size of far memory, default=16384')
     parser.add_argument('--size', type=int,
                         help='size of workload (num of tasks) ' \
                         'default=200', default=200)
