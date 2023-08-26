@@ -6,6 +6,7 @@ import time
 import psutil
 import numpy as np
 import shlex
+from threading import Lock
 
 from lib import utils
 from lib.container import Container
@@ -236,6 +237,8 @@ class Pagerank(Workload):
         full_command = ' '.join((prefix, 'exec', set_cpu, shell_cmd))
         return full_command
 
+global_counter_lock = Lock()
+
 class Memcached(Workload):
     wname = "memcached"
     ideal_mem = 12288
@@ -248,9 +251,11 @@ class Memcached(Workload):
     global_counter = 0
 
     def get_cmdline(self, procs_path, pinned_cpus):
-        Memcached.global_counter += 1
+        with global_counter_lock:
+            Memcached.global_counter += 1
+            my_counter = Memcached.global_counter
         prefix = "echo $$ > {} &&".format(procs_path)
-        shell_cmd = '/usr/bin/time -v' + ' python ' + constants.WORK_DIR + '/memcached/run.py {} {} {}'.format(global_counter, pinned_cpus[0], pinned_cpus[1])
+        shell_cmd = '/usr/bin/time -v' + ' python ' + constants.WORK_DIR + '/memcached/run.py {} {} {}'.format(my_counter, pinned_cpus[0], pinned_cpus[1])
         pinned_cpus_string = ','.join(map(str, pinned_cpus))
         set_cpu = 'taskset -c {}'.format(pinned_cpus_string)
         full_command = ' '.join((prefix, 'exec', set_cpu, shell_cmd))
