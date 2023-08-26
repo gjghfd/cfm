@@ -35,6 +35,7 @@ SWAP_REGEX = re.compile(rb"VmSwap:\s+(\d+)\s+\.*")
 MAX_SWAPFILE = 12
 
 lock = Lock()
+lock_fin = Lock()
 
 def eq(x,mems,local_mem):
     return np.dot(x, mems) - local_mem
@@ -420,35 +421,36 @@ class Machine:
     def check_finished(self):
         new_finished = []
         old_alloc_mem = self.alloc_mem
-        for workload in self.executing[:]:
-            if not workload.is_alive():
-                finished_string = "{} finished at {} s (duration={})"
-                print(finished_string.format(workload.get_name(),
-                                            round(workload.ts_finish - self.base_time, 3),
-                                            workload.get_process_duration()), flush = True)
-                
-                self.unpinned_cpus.update(workload.pinned_cpus)
-                
-                for cpu in workload.pinned_cpus:
-                    self.cpu_assignments[cpu] = None
-                self.free_cpus += workload.cpu_req
-                self.alloc_mem -= workload.ideal_mem
-                self.min_mem_sum -= workload.min_mem
-                if workload in self.executing:
-                    self.executing.remove(workload)
-                else:
-                    print("Error: workload not in executing list", flush = True)
-                    for w in self.executing:
-                        print(w.idd)
-                    print("my: {}".format(workload.idd), flush = True)
-                new_finished.append(workload)
-                
-                # adjust percents
-                el_time = time.time()*1000 - self.last_time
-                final_percent = workload.percent + el_time/workload.profile(workload.ratio)
-                if workload.wname in self.slow_downs:
-                    self.slow_downs[workload.wname] = 0.05*final_percent + 0.95*self.slow_downs[workload.wname]
-                    logging.info('{} new slow down is {}'.format(workload.wname,self.slow_downs[workload.wname]))
+        with lock_fin:
+            for workload in self.executing[:]:
+                if not workload.is_alive():
+                    finished_string = "{} finished at {} s (duration={})"
+                    print(finished_string.format(workload.get_name(),
+                                                round(workload.ts_finish - self.base_time, 3),
+                                                workload.get_process_duration()), flush = True)
+                    
+                    self.unpinned_cpus.update(workload.pinned_cpus)
+                    
+                    for cpu in workload.pinned_cpus:
+                        self.cpu_assignments[cpu] = None
+                    self.free_cpus += workload.cpu_req
+                    self.alloc_mem -= workload.ideal_mem
+                    self.min_mem_sum -= workload.min_mem
+                    if workload in self.executing:
+                        self.executing.remove(workload)
+                    else:
+                        print("Error: workload not in executing list", flush = True)
+                        for w in self.executing:
+                            print(w.idd)
+                        print("my: {}".format(workload.idd), flush = True)
+                    new_finished.append(workload)
+                    
+                    # adjust percents
+                    el_time = time.time()*1000 - self.last_time
+                    final_percent = workload.percent + el_time/workload.profile(workload.ratio)
+                    if workload.wname in self.slow_downs:
+                        self.slow_downs[workload.wname] = 0.05*final_percent + 0.95*self.slow_downs[workload.wname]
+                        logging.info('{} new slow down is {}'.format(workload.wname,self.slow_downs[workload.wname]))
         self.finished.extend(new_finished)
 
         if new_finished:
