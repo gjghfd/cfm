@@ -244,10 +244,7 @@ class Machine:
         self.alloc_mem += new_workload_class.ideal_mem
         self.check_state() # Update self.using_remote_mem
         
-        if self.using_remote_mem:
-            pinnable_cpus = self.check_reclaimer_cpu()
-        else:
-            pinnable_cpus = set(self.unpinned_cpus)
+        pinnable_cpus = set(self.unpinned_cpus)
         
         new_workload_cpus = set([pinnable_cpus.pop() for i in range(new_workload_class.cpu_req)])
         self.unpinned_cpus.difference_update(new_workload_cpus) # Remove these cpus from the unpinned set

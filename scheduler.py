@@ -325,7 +325,8 @@ class Server:
         return self.free_cpus >= w.cpu_req
 
     def fits_cpu_remote(self, w):
-        return self.free_cpus - 1 >= w.cpu_req
+        return self.free_cpus >= w.cpu_req      # do not care reclaimer cpu
+        # return self.free_cpus - 1 >= w.cpu_req
 
     def get_finished(self):
         req = protocol_pb2.GetFinishedReq()
