@@ -255,7 +255,8 @@ class Memcached(Workload):
             Memcached.global_counter += 1
             my_counter = Memcached.global_counter
         prefix = "echo $$ > {} &&".format(procs_path)
-        shell_cmd = '/usr/bin/time -v' + ' python ' + constants.WORK_DIR + '/memcached/run.py {} {} {}'.format(my_counter, pinned_cpus[0], pinned_cpus[1])
+        pinned_cpus_list = list(pinned_cpus)
+        shell_cmd = '/usr/bin/time -v' + ' python ' + constants.WORK_DIR + '/memcached/run.py {} {} {}'.format(my_counter, pinned_cpus_list[0], pinned_cpus_list[1])
         pinned_cpus_string = ','.join(map(str, pinned_cpus))
         set_cpu = 'taskset -c {}'.format(pinned_cpus_string)
         full_command = ' '.join((prefix, 'exec', set_cpu, shell_cmd))

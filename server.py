@@ -36,6 +36,7 @@ MAX_SWAPFILE = 12
 
 lock = Lock()
 lock_fin = Lock()
+lock_resource = Lock()
 
 def eq(x,mems,local_mem):
     return np.dot(x, mems) - local_mem
@@ -243,8 +244,10 @@ class Machine:
         new_workload_class = workloads.get_workload_class(new_workload_name)
         self.alloc_mem += new_workload_class.ideal_mem
         self.check_state() # Update self.using_remote_mem
-        
+
         pinnable_cpus = set(self.unpinned_cpus)
+        if len(pinnable_cpus) < new_workload_class.cpu_req:
+            print('Error: need {} cpus, only {} valid'.format(new_workload_class.cpu_req, len(pinnable_cpus)))
         
         new_workload_cpus = set([pinnable_cpus.pop() for i in range(new_workload_class.cpu_req)])
         self.unpinned_cpus.difference_update(new_workload_cpus) # Remove these cpus from the unpinned set
@@ -259,7 +262,6 @@ class Machine:
 
         self.min_mem_sum += new_workload.min_mem
         self.free_cpus -= new_workload_class.cpu_req
-
 
         all_workloads = self.executing + [new_workload]
 
@@ -561,26 +563,29 @@ class Scheduler(protocol_pb2_grpc.SchedulerServicer):
         """ executes the request.wname workload.
         if we are using remote memory, computes the new ratio
         that will be required after placing the workload."""
-        self.machine.check_finished()
-        self.machine.execute(request.wname, request.idd)
+        with lock_resource:
+            self.machine.check_finished()
+            self.machine.execute(request.wname, request.idd)
         return protocol_pb2.ExecuteReply(success=True)
 
     def get_resources(self, request, context):
-        self.machine.check_finished()
-        resources = self.machine.get_resources()
+        with lock_resource:
+            self.machine.check_finished()
+            resources = self.machine.get_resources()
         # ** Expands dictionary into named arguments for a function
         reply = protocol_pb2.GetResourcesReply(**resources)
         return reply
 
     def get_finished(self, request, context):
-        self.machine.check_finished()
-        start_times = {f.idd: f.ts_start - self.machine.base_time
-                          for f in self.machine.finished}
-        finished_times = {f.idd: f.ts_finish - self.machine.base_time
-                          for f in self.machine.finished}
-        reply = protocol_pb2.GetFinishedReply(start_times = start_times,
-                                              finished_times=finished_times)
-        self.machine.clear_finished()
+        with lock_resource:
+            self.machine.check_finished()
+            start_times = {f.idd: f.ts_start - self.machine.base_time
+                            for f in self.machine.finished}
+            finished_times = {f.idd: f.ts_finish - self.machine.base_time
+                            for f in self.machine.finished}
+            reply = protocol_pb2.GetFinishedReply(start_times = start_times,
+                                                finished_times=finished_times)
+            self.machine.clear_finished()
         return reply
 
     def shutdown(self, request, context):
