@@ -517,8 +517,8 @@ class Machine:
 
                 logging.info("bw_tx: {}".format(bw_tx / MEGABYTE))
                 logging.info("bw_recv: {}".format(bw_recv / MEGABYTE))
-            
-            logging.info("shrink_time: count = {}, avg = {}, max = {}".format(self.shrink_count, self.total_shrink_time / self.shrink_count, self.max_shrink_time))
+            if self.shrink_count:
+                logging.info("shrink_time: count = {}, avg = {}, max = {}".format(self.shrink_count, self.total_shrink_time / self.shrink_count, self.max_shrink_time))
         else:
             pass
 
