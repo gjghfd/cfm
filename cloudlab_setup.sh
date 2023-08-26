@@ -4,6 +4,9 @@ echo 'Please make sure you have configured every node in SoDM'
 
 username='gjghfd'
 
+# configure myself
+bash init_cfm_env.sh
+
 # generate hosts and ips
 python genIPs.py
 sed -i '1,4d' hosts.txt
