@@ -36,11 +36,13 @@ class Scheduler:
         self.remotemem = args.remotemem
         self.max_far_mem = args.max_far
         self.base_time = time.time()
+        n = len(args.servers)
+        print('num servers = {}'.format(n))
         
         for addr in sorted(args.servers):
             self.servers.append(Server(addr, args.remotemem, args.cpus, args.mem,
                                   args.uniform_ratio, variable_ratios,
-                                  args.max_far, args.optimal))
+                                  args.max_far / n, args.optimal))
         
         self.original_servers = list(self.servers) # Retain the original ordering for later shuffling operations
 
@@ -87,9 +89,8 @@ class Scheduler:
 
         # we are using remote memory. for every server, check if we
         # can fit it using remote mem
-        total_far_mem = sum(max(0, ss.alloc_mem - ss.total_mem) for ss in self.servers)
         for s in self.servers:
-            if s.fits_remotemem(workload, self.max_far_mem, total_far_mem):
+            if s.fits_remotemem(workload):
                 return s
 
         return None
@@ -214,6 +215,7 @@ class Server:
         self.stub = protocol_pb2_grpc.SchedulerStub(self.channel)
         self.checkin(remotemem, max_cpus, max_mem, uniform_ratio,
                      variable_ratios, max_far > 0, optimal)
+        self.max_far = max_far
         self.addr = addr
 
         print("connected to server={}".format(self.name), flush = True)
@@ -281,24 +283,24 @@ class Server:
                 return False
         return True
 
-    def fits_farmem_variable(self, w, max_far_mem, total_far_mem):
+    def fits_farmem_variable(self, w):
         local_min_mem_sum = self.min_mem_sum + w.min_mem
         if local_min_mem_sum > self.total_mem:
             return False
-
-        if max_far_mem > 0:
+        
+        if self.max_far > 0:
             curr_far_mem = max(0, self.alloc_mem - self.total_mem)
             if curr_far_mem > 0:
                 additional_far_mem = w.mem_req
             else:
                 additional_far_mem = max(0, w.mem_req + self.alloc_mem - self.total_mem)
 
-            if total_far_mem + additional_far_mem > max_far_mem:
+            if curr_far_mem + additional_far_mem > self.max_far:
                 return False
         return True
 
 
-    def fits_remotemem(self, w, max_far_mem, total_far_mem):
+    def fits_remotemem(self, w):
         """ assumes the workload didn't fit normally, try to fit it with
         remote memory. we only want to determine whether the workload fits,
         but will let the server compute its own ratio (to avoid consistency
@@ -308,11 +310,11 @@ class Server:
         if not self.fits_cpu_remote(w):
             return False
 
-        if self.uniform_ratio:
-            return self.fits_farmem_uniform(w, max_far_mem, total_far_mem)
+        # if self.uniform_ratio:
+        #     return self.fits_farmem_uniform(w, max_far_mem, total_far_mem)
 
         # Variable Policy
-        return self.fits_farmem_variable(w, max_far_mem, total_far_mem)
+        return self.fits_farmem_variable(w)
 
 
     def fits_normally(self, w):
@@ -494,11 +496,9 @@ def main():
                         'default=matrix,graphx,pagerank,imgscan,quicksort,memcached',
                         default='matrix,graphx,pagerank,imgscan,quicksort,memcached')
     parser.add_argument('--uniform_ratio', type=float,
-                        help='Smallest allowable memory ratio',
-                        default=0)
+                        help='Smallest allowable memory ratio')
     parser.add_argument('--variable_ratios', type= lambda s: s.split(','),
-                        help='Min ratio for each workload',
-                        default=[])
+                        help='Min ratio for each workload')
     parser.add_argument('--optimal', '-o', action='store_true',
                         help='Use the optimal algorithm', default=True)
     parser.add_argument('--workload_path', type=str,

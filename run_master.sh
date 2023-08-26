@@ -18,7 +18,7 @@ if [[ $# -eq 2 ]]; then
 else
     echo "Total Far Memory = "$3"GiB"
     tot_far=$3
-    max_far=$((tot_far*1024/16))
+    max_far=$((tot_far*1024))
     echo "Copy the command and run."
     echo "nohup python scheduler.py $servers --max_far $max_far > master.out 2>&1 &"
 fi
