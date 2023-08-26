@@ -2,6 +2,8 @@
 """Server receives connection from scheduler"""
 
 from concurrent import futures
+from threading import Lock
+import os
 import time
 import logging
 import argparse
@@ -30,7 +32,9 @@ THP_PATH = "/sys/kernel/mm/transparent_hugepage/enabled"
 SOMAXCONN_PATH = "/proc/sys/net/core/somaxconn"
 SWAPPINESS_THRESHOLD = 60
 SWAP_REGEX = re.compile(rb"VmSwap:\s+(\d+)\s+\.*")
+MAX_SWAPFILE = 12
 
+lock = Lock()
 
 def eq(x,mems,local_mem):
     return np.dot(x, mems) - local_mem
@@ -77,6 +81,7 @@ class Machine:
         self.alloc_mem = 0
         self.min_mem_sum = 0
         self.cur_ratio = 1
+        self.cpu2swap = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
 
         # how much memory we have placed in this machine.
         # can be > total_mem when using remote memory
@@ -245,7 +250,8 @@ class Machine:
         
         new_workload_cpus = set([pinnable_cpus.pop() for i in range(new_workload_class.cpu_req)])
         self.unpinned_cpus.difference_update(new_workload_cpus) # Remove these cpus from the unpinned set
-        new_workload = new_workload_class(idd, new_workload_cpus)
+        new_workload_swapfile = self.bind_swapfile(new_workload_cpus)
+        new_workload = new_workload_class(idd, new_workload_cpus, new_workload_swapfile)
 
         for cpu in new_workload_cpus:
             self.cpu_assignments[cpu] = new_workload
@@ -393,6 +399,19 @@ class Machine:
         res = minimize(obj_new, x0, method='SLSQP', jac=obj_grad_new, args=(ideal_mems, percents, profiles, gradients, mem_gradients, beta), constraints=eq_cons, options={'disp': False}, bounds=bounds)
         final_ratios = res.x
         return np.round(final_ratios,3), res.fun
+    
+    def bind_swapfile(self, pinned_cpus):
+        # get the swapfile corresponding to pinned_cpus[0] and bind it to all cpus
+        with lock:  # use lock to protect cpu2swap array
+            swapfile = np.min(pinned_cpus) % MAX_SWAPFILE
+            for c in pinned_cpus:
+                self.cpu2swap[c] = swapfile
+                self.cpu2swap[c + 16] = swapfile
+            param = "cpu_to_swap_partition"
+            for i in range(0, 33):
+                param = param + " " + str(self.cpu2swap[i])
+            os.system('python /mydata/canvas/syscaller.py ' + param)
+
 
     def check_finished(self):
         new_finished = []

@@ -25,7 +25,7 @@ class Workload:
     min_ratio = None
     cpu_req = None
 
-    def __init__(self, idd, pinned_cpus, mem_ratio=1):
+    def __init__(self, idd, pinned_cpus, swapfile, mem_ratio=1):
 
         self.idd = idd  # a unique uint id for this workload
 
@@ -42,6 +42,9 @@ class Workload:
         
         # Pin CPUs
         self.pinned_cpus = pinned_cpus
+
+        # Swapfile
+        self.swapfile = swapfile
 
         # Get shell command
         procs_path = self.container.get_procs_path()
@@ -145,7 +148,7 @@ class Workload:
 class Quicksort(Workload):
     wname = "quicksort"
     ideal_mem = 8294.4
-    min_ratio = 0.5
+    min_ratio = 0.76
     min_mem = int(min_ratio * ideal_mem)
     binary_name = "quicksort"
     cpu_req = 1
@@ -164,7 +167,7 @@ class Quicksort(Workload):
 class Matrix(Workload):
     wname = "matrix"
     ideal_mem = 4300.8
-    min_ratio = 0.5
+    min_ratio = 0.53
     min_mem = int(min_ratio * ideal_mem)
     binary_name = "matrix"
     cpu_req = 1
@@ -182,7 +185,7 @@ class Matrix(Workload):
 class Imgscan(Workload):
     wname = "imgscan"
     ideal_mem = 6963.2
-    min_ratio = 0.5
+    min_ratio = 0.71
     min_mem = int(min_ratio * ideal_mem)
     binary_name = "imgscan"
     cpu_req = 1
@@ -200,7 +203,7 @@ class Imgscan(Workload):
 class Graphx(Workload):
     wname = "graphx"
     ideal_mem = 5120
-    min_ratio = 0.5
+    min_ratio = 0.6
     min_mem = int(min_ratio * ideal_mem)
     binary_name = "graphx"
     cpu_req = 4
@@ -209,7 +212,7 @@ class Graphx(Workload):
 
     def get_cmdline(self, procs_path, pinned_cpus):
         prefix = "echo $$ > {} &&".format(procs_path)
-        shell_cmd = '/usr/bin/time -v' + ' ' + constants.WORK_DIR + '/pagerank/spark-2.4.0-bin-hadoop2.7/bin/spark-submit --driver-memory 10g --master local[3] --class CCS --conf spark.local.dir=/mydata graphx/target/scala-2.11/graphx_2.11-1.0.jar'
+        shell_cmd = '/usr/bin/time -v' + ' ' + constants.WORK_DIR + '/pagerank/spark-2.4.0-bin-hadoop2.7/bin/spark-submit --driver-memory 10g --master local[3] --class CCS --conf spark.local.dir=/mydata ' + constants.WORK_DIR + '/graphx/target/scala-2.11/graphx_2.11-1.0.jar'
         pinned_cpus_string = ','.join(map(str, pinned_cpus))
         set_cpu = 'taskset -c {}'.format(pinned_cpus_string)
         full_command = ' '.join((prefix, 'exec', set_cpu, shell_cmd))
@@ -218,7 +221,7 @@ class Graphx(Workload):
 class Pagerank(Workload):
     wname = "pagerank"
     ideal_mem = 5529.6
-    min_ratio = 0.5
+    min_ratio = 0.63
     min_mem = int(min_ratio * ideal_mem)
     binary_name = "pagerank"
     cpu_req = 3
@@ -227,7 +230,7 @@ class Pagerank(Workload):
 
     def get_cmdline(self, procs_path, pinned_cpus):
         prefix = "echo $$ > {} &&".format(procs_path)
-        shell_cmd = '/usr/bin/time -v' + ' ' + constants.WORK_DIR + '/pagerank/spark-2.4.0-bin-hadoop2.7/bin/spark-submit --driver-memory 10g --master local[2] --class pagerank --conf spark.local.dir=/mydata pagerank/target/scala-2.11/pagerank_2.11-1.0.jar'
+        shell_cmd = '/usr/bin/time -v' + ' ' + constants.WORK_DIR + '/pagerank/spark-2.4.0-bin-hadoop2.7/bin/spark-submit --driver-memory 10g --master local[2] --class pagerank --conf spark.local.dir=/mydata ' + constants.WORK_DIR + '/pagerank/target/scala-2.11/pagerank_2.11-1.0.jar'
         pinned_cpus_string = ','.join(map(str, pinned_cpus))
         set_cpu = 'taskset -c {}'.format(pinned_cpus_string)
         full_command = ' '.join((prefix, 'exec', set_cpu, shell_cmd))
@@ -236,7 +239,7 @@ class Pagerank(Workload):
 class Memcached(Workload):
     wname = "memcached"
     ideal_mem = 12288
-    min_ratio = 0.5
+    min_ratio = 0.83
     min_mem = int(min_ratio * ideal_mem)
     binary_name = "memcached"
     cpu_req = 2
