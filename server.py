@@ -403,12 +403,16 @@ class Machine:
     def bind_swapfile(self, pinned_cpus):
         # get the swapfile corresponding to pinned_cpus[0] and bind it to all cpus
         with lock:  # use lock to protect cpu2swap array
-            swapfile = np.min(pinned_cpus) % MAX_SWAPFILE
+            swapfile = 32
+            for c in pinned_cpus:
+                if c < swapfile:
+                    swapfile = c
+            swapfile = swapfile % MAX_SWAPFILE
             for c in pinned_cpus:
                 self.cpu2swap[c] = swapfile
                 self.cpu2swap[c + 16] = swapfile
             param = "cpu_to_swap_partition"
-            for i in range(0, 33):
+            for i in range(0, 32):
                 param = param + " " + str(self.cpu2swap[i])
             os.system('python /mydata/canvas/syscaller.py ' + param)
 
