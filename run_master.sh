@@ -3,11 +3,11 @@ if [[ $# -lt 2 ]]; then
     exit 1
 fi
 
-servers="10.10.1.5:50051"
+servers="10.10.1.5:50061"
 
 for i in $(seq 2 $1);
 do
-    servers=$servers",10.10.1."$((i+4))":50051"
+    servers=$servers",10.10.1."$((i+4))":50061"
 done
 
 python generate_sampled_trace.py --workload_config_path /mydata/cfm/workload.csv --load_frac $2

@@ -617,7 +617,7 @@ def serve():
     scheduler = Scheduler(thismachine, hostname)
     protocol_pb2_grpc.add_SchedulerServicer_to_server(scheduler, server)
 
-    server.add_insecure_port('[::]:50051')
+    server.add_insecure_port('[::]:50061')
     server.start()
 
     total_cpus = 16
