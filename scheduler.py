@@ -45,9 +45,9 @@ class Scheduler:
         
         for index, addr in enumerate(sorted(args.servers)):
             ratio = args.each_cpu[index] / args.cpus
-            self.servers.append(Server(addr, args.remotemem * ratio, args.each_cpu[index], args.mem * ratio,
+            self.servers.append(Server(addr, args.remotemem, args.each_cpu[index], int(args.mem * ratio),
                                   args.uniform_ratio, variable_ratios,
-                                  args.max_far * args.each_cpu[index] / sum_cpu, args.optimal))
+                                  int(args.max_far * args.each_cpu[index] / sum_cpu), args.optimal))
         
         self.original_servers = list(self.servers) # Retain the original ordering for later shuffling operations
 
