@@ -16,10 +16,10 @@ do
     echo "Start configuring $line..."
 
     echo 'Upload env_setup.sh'
-    scp init_cfm_env.sh "$username@$line:~/"
+    scp -o "StrictHostKeyChecking no" init_cfm_env.sh "$username@$line:~/"
 
     echo "Set up environment in $line..."
-    ssh -tt "$username@$line" "bash init_cfm_env.sh"
+    ssh -o "StrictHostKeyChecking no" -tt "$username@$line" "bash init_cfm_env.sh"
 
     echo "Everything done in $line!"
 done 10< hosts.txt

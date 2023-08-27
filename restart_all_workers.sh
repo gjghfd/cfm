@@ -5,6 +5,6 @@ sed -i '1,4d' hosts.txt
 username='gjghfd'
 while read -u10 line
 do
-    ssh -tt "$username@$line" "cd /mydata/cfm && git pull origin master && bash run_worker.sh"
+    ssh -o "StrictHostKeyChecking no" -tt "$username@$line" "cd /mydata/cfm && git pull origin master && bash run_worker.sh"
     echo "Worker restarted in $line!"
 done 10< hosts.txt
