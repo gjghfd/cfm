@@ -38,11 +38,16 @@ class Scheduler:
         self.base_time = time.time()
         n = len(args.servers)
         print('num servers = {}'.format(n))
+
+        sum_cpu = 0
+        for c in args.each_cpu:
+            sum_cpu = sum_cpu + c
         
-        for addr in sorted(args.servers):
-            self.servers.append(Server(addr, args.remotemem, args.cpus, args.mem,
+        for index, addr in enumerate(sorted(args.servers)):
+            ratio = args.each_cpu[index] / args.cpus
+            self.servers.append(Server(addr, args.remotemem * ratio, args.each_cpu[index], args.mem * ratio,
                                   args.uniform_ratio, variable_ratios,
-                                  args.max_far / n, args.optimal))
+                                  args.max_far * args.each_cpu[index] / sum_cpu, args.optimal))
         
         self.original_servers = list(self.servers) # Retain the original ordering for later shuffling operations
 
@@ -478,6 +483,9 @@ def main():
                         default=42)
     parser.add_argument('servers', type=lambda s: s.split(','),
                         help='comma separated list of servers')
+    parser.add_argument('--each_cpu', type=lambda s: s.split(','),
+                        help='comma separated list of cpus on each server',
+                        default=[16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16])
     parser.add_argument('--cpus', type=int,
                         help='number of cpus required for each server',
                         default=16)
