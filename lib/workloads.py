@@ -12,7 +12,7 @@ from lib import utils
 from lib.container import Container
 from lib import constants
 
-slo_rate = 1.8
+slo_rate = 1.2
 
 class Workload:
     ''' This class is not meant to be used by itself. It's only purpose
