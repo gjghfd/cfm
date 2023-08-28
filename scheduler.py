@@ -70,6 +70,7 @@ class Scheduler:
         base_time = schedule[0].ts_arrival - 1
         for request in schedule:
             request.ts_arrival -= base_time
+            request.ddl -= base_time
         print('Workloads Info:')
         print(len(schedule))
         print(schedule[0].ts_arrival, flush = True)
